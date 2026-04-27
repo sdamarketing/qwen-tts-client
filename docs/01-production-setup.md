@@ -31,6 +31,8 @@ chmod +x ./scripts/install_qwen_tts_client.sh
 - `/tts provider tts-local-cli`
 - отправить тестовое сообщение для озвучки
 
+Если после обновления OpenClaw видишь ошибку `Unrecognized keys: "audioAsVoice", "textLimit"`, значит остались старые ключи в `messages.tts`. Удалить их и оставить `maxTextLength`.
+
 ## Ручной профиль (без установщика)
 
 Если нужно применить настройки вручную:

@@ -4,8 +4,7 @@
     tts: {
       enabled: true,
       provider: "tts-local-cli",
-      audioAsVoice: true,
-      textLimit: 500,
+      maxTextLength: 500,
       providers: {
         "tts-local-cli": {
           enabled: true,

@@ -93,8 +93,9 @@ providers["tts-local-cli"] = {
 
 tts["enabled"] = True
 tts["provider"] = "tts-local-cli"
-tts["audioAsVoice"] = True
-tts["textLimit"] = 500
+tts["maxTextLength"] = 500
+tts.pop("audioAsVoice", None)
+tts.pop("textLimit", None)
 
 config_path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n")
 print(f"updated {config_path}")
