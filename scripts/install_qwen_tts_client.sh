@@ -13,6 +13,10 @@ print_step() {
   echo "==> $1"
 }
 
+env_quote() {
+  python3 -c 'import shlex,sys; print(shlex.quote(sys.argv[1]))' "$1"
+}
+
 prompt_value() {
   local label="$1"
   local default_value="$2"
@@ -45,9 +49,9 @@ SMOKE_TEXT="$(prompt_value "Smoke test text" "Проверка удаленно�
 
 print_step "Writing ${CLIENT_ENV_PATH}"
 cat > "${CLIENT_ENV_PATH}" <<EOF
-CENTRAL_TTS_BASE_URL=${BASE_URL}
-CENTRAL_TTS_API_KEY=${API_KEY}
-SMOKE_TEXT=${SMOKE_TEXT}
+CENTRAL_TTS_BASE_URL=$(env_quote "${BASE_URL}")
+CENTRAL_TTS_API_KEY=$(env_quote "${API_KEY}")
+SMOKE_TEXT=$(env_quote "${SMOKE_TEXT}")
 EOF
 chmod 600 "${CLIENT_ENV_PATH}"
 
