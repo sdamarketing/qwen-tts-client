@@ -11,6 +11,7 @@
 
 ## Принцип
 
-- активен только `tts-local-cli`;
-- `qwen_tts_proxy_opus.sh` делает HTTPS вызов в удаленный `/tts`;
-- локальная конверсия аудио отсутствует.
+- `tts-local-cli` активируется как primary provider;
+- `qwen_tts_proxy_opus.sh` запускает `qwen_tts_runtime.py`;
+- runtime делает HTTPS вызов в удаленный `/tts` и поддерживает retry/timeout/diagnostics;
+- локальная генерация отсутствует, локальная конверсия не выполняется.

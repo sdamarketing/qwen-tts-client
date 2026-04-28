@@ -4,14 +4,20 @@
     tts: {
       enabled: true,
       provider: "tts-local-cli",
-      maxTextLength: 500,
+      auto: "off",
+      persona: "",
+      personas: {},
+      maxTextLength: 600,
       providers: {
         "tts-local-cli": {
           enabled: true,
           command: "/home/alekhm/.openclaw/bin/qwen_tts_proxy_opus.sh",
           args: ["{{Text}}", "{{OutputPath}}"],
           outputFormat: "opus",
-          timeoutMs: 120000
+          timeoutMs: 120000,
+          env: {
+            QWEN_TTS_RUNTIME_SCRIPT: "/home/alekhm/.openclaw/bin/qwen_tts_runtime.py"
+          }
         }
       }
     }

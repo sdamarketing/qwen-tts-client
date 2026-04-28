@@ -6,6 +6,8 @@ OPENCLAW_HOME="${OPENCLAW_HOME:-$HOME/.openclaw}"
 CLIENT_ENV_PATH="${ROOT_DIR}/.env"
 PROXY_SCRIPT_SOURCE="${ROOT_DIR}/scripts/qwen_tts_proxy_opus.sh"
 PROXY_SCRIPT_TARGET="${OPENCLAW_HOME}/bin/qwen_tts_proxy_opus.sh"
+RUNTIME_SCRIPT_SOURCE="${ROOT_DIR}/scripts/qwen_tts_runtime.py"
+RUNTIME_SCRIPT_TARGET="${OPENCLAW_HOME}/bin/qwen_tts_runtime.py"
 DEFAULT_BASE_URL="https://qwen-tts-118.tailf26c2b.ts.net"
 
 print_step() {
@@ -46,28 +48,44 @@ if [[ -z "${API_KEY}" ]]; then
 fi
 
 SMOKE_TEXT="$(prompt_value "Smoke test text" "Проверка удаленного TTS клиента.")"
+DEFAULT_TARGET="$(prompt_value "CENTRAL_TTS_TARGET (voice-note|audio-file|telephony)" "voice-note")"
+DEFAULT_TIMEOUT_SEC="$(prompt_value "CENTRAL_TTS_TIMEOUT_SEC" "120")"
+DEFAULT_RETRIES="$(prompt_value "CENTRAL_TTS_RETRIES" "2")"
+DEFAULT_BACKOFF_MS="$(prompt_value "CENTRAL_TTS_RETRY_BACKOFF_MS" "350")"
 
 print_step "Writing ${CLIENT_ENV_PATH}"
 cat > "${CLIENT_ENV_PATH}" <<EOF
 CENTRAL_TTS_BASE_URL=$(env_quote "${BASE_URL}")
 CENTRAL_TTS_API_KEY=$(env_quote "${API_KEY}")
 SMOKE_TEXT=$(env_quote "${SMOKE_TEXT}")
+CENTRAL_TTS_TARGET=$(env_quote "${DEFAULT_TARGET}")
+CENTRAL_TTS_TIMEOUT_SEC=$(env_quote "${DEFAULT_TIMEOUT_SEC}")
+CENTRAL_TTS_RETRIES=$(env_quote "${DEFAULT_RETRIES}")
+CENTRAL_TTS_RETRY_BACKOFF_MS=$(env_quote "${DEFAULT_BACKOFF_MS}")
+# Optional hints for OpenClaw 2026.4.25+ flow
+CENTRAL_TTS_VOICE=
+CENTRAL_TTS_MODEL=
+CENTRAL_TTS_PERSONA=
+CENTRAL_TTS_SESSION_HINTS_JSON=
 EOF
 chmod 600 "${CLIENT_ENV_PATH}"
 
-print_step "Installing proxy script"
+print_step "Installing runtime scripts"
 mkdir -p "${OPENCLAW_HOME}/bin"
 cp "${PROXY_SCRIPT_SOURCE}" "${PROXY_SCRIPT_TARGET}"
+cp "${RUNTIME_SCRIPT_SOURCE}" "${RUNTIME_SCRIPT_TARGET}"
 chmod +x "${PROXY_SCRIPT_TARGET}"
+chmod +x "${RUNTIME_SCRIPT_TARGET}"
 
 print_step "Configuring OpenClaw TTS provider"
-python3 - "${OPENCLAW_HOME}" "${PROXY_SCRIPT_TARGET}" <<'PY'
+python3 - "${OPENCLAW_HOME}" "${PROXY_SCRIPT_TARGET}" "${RUNTIME_SCRIPT_TARGET}" <<'PY'
 import json
 import pathlib
 import sys
 
 openclaw_home = pathlib.Path(sys.argv[1])
 proxy_script = sys.argv[2]
+runtime_script = sys.argv[3]
 config_path = openclaw_home / "openclaw.json"
 
 if not config_path.exists():
@@ -79,21 +97,23 @@ messages = data.setdefault("messages", {})
 tts = messages.setdefault("tts", {})
 providers = tts.setdefault("providers", {})
 
-for key in list(providers.keys()):
-    if key != "tts-local-cli":
-        providers.pop(key, None)
-
 providers["tts-local-cli"] = {
     "enabled": True,
     "command": proxy_script,
     "args": ["{{Text}}", "{{OutputPath}}"],
     "outputFormat": "opus",
     "timeoutMs": 120000,
+    "env": {
+        "QWEN_TTS_RUNTIME_SCRIPT": runtime_script,
+    },
 }
 
 tts["enabled"] = True
 tts["provider"] = "tts-local-cli"
-tts["maxTextLength"] = 500
+tts.setdefault("auto", "off")
+tts.setdefault("persona", "")
+tts.setdefault("personas", {})
+tts["maxTextLength"] = 600
 tts.pop("audioAsVoice", None)
 tts.pop("textLimit", None)
 
