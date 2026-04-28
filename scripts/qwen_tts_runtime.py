@@ -15,7 +15,13 @@ def _load_env_file(path: Path) -> dict[str, str]:
     data: dict[str, str] = {}
     if not path.exists():
         return data
-    for raw_line in path.read_text(encoding="utf-8").splitlines():
+    raw = path.read_bytes()
+    try:
+        content = raw.decode("utf-8")
+    except UnicodeDecodeError:
+        # Keep runtime resilient on hosts where env was edited with mixed encodings.
+        content = raw.decode("utf-8", errors="replace")
+    for raw_line in content.splitlines():
         line = raw_line.strip()
         if not line or line.startswith("#") or "=" not in line:
             continue
