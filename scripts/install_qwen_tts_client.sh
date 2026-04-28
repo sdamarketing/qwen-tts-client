@@ -122,6 +122,36 @@ config_path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n")
 print(f"updated {config_path}")
 PY
 
+print_step "Normalizing local TTS preferences"
+python3 - "${OPENCLAW_HOME}" <<'PY'
+import json
+import pathlib
+import time
+
+openclaw_home = pathlib.Path(__import__("sys").argv[1])
+prefs_path = openclaw_home / "settings" / "tts.json"
+if not prefs_path.exists():
+    print("no local tts prefs found")
+    raise SystemExit(0)
+
+try:
+    prefs = json.loads(prefs_path.read_text())
+except Exception:
+    backup = prefs_path.with_name(f"tts.json.bak.invalid.{int(time.time())}")
+    prefs_path.rename(backup)
+    print(f"moved invalid prefs to {backup}")
+    raise SystemExit(0)
+
+tts = prefs.get("tts", {})
+provider_only = isinstance(tts, dict) and set(tts.keys()) <= {"provider"}
+if provider_only:
+    backup = prefs_path.with_name(f"tts.json.bak.provider-only.{int(time.time())}")
+    prefs_path.rename(backup)
+    print(f"moved provider-only prefs to {backup}")
+else:
+    print("local tts prefs left unchanged")
+PY
+
 print_step "Restarting gateway service (if available)"
 if command -v systemctl >/dev/null 2>&1 && systemctl --user list-unit-files | awk '{print $1}' | grep -qx "openclaw-gateway.service"; then
   systemctl --user restart openclaw-gateway.service || true
