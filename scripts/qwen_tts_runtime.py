@@ -78,7 +78,8 @@ def _build_payload(text: str, request_id: str) -> dict[str, object]:
 def main() -> int:
     text = sys.argv[1] if len(sys.argv) > 1 else ""
     out_path = Path(sys.argv[2]) if len(sys.argv) > 2 else None
-    env_path = Path(_env("QWEN_TTS_CLIENT_ENV", str(Path(__file__).resolve().parents[1] / ".env")))
+    default_env = Path.home() / ".openclaw" / "qwen_tts_client.env"
+    env_path = Path(_env("QWEN_TTS_CLIENT_ENV", str(default_env)))
     if not text or out_path is None:
         print("usage: qwen_tts_runtime.py <text> <output_path>", file=sys.stderr)
         return 2

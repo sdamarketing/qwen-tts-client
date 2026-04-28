@@ -13,7 +13,7 @@ Production-клиент для OpenClaw `tts-local-cli`, который прок
 ## Что делает проект
 
 - интерактивно запрашивает endpoint и API key удаленного TTS;
-- генерирует `.env` клиента с retry/timeout/hints настройками;
+- генерирует `~/.openclaw/qwen_tts_client.env` с retry/timeout/hints настройками;
 - настраивает `~/.openclaw/openclaw.json` под `tts-local-cli` без удаления других providers;
 - мигрирует legacy-ключи (`audioAsVoice`, `textLimit`) в `maxTextLength`;
 - выполняет smoke-test и проверяет выходной аудиофайл.

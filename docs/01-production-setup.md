@@ -20,7 +20,7 @@ chmod +x ./scripts/install_qwen_tts_client.sh
 
 Скрипт:
 
-- создаёт `.env`;
+- создаёт `~/.openclaw/qwen_tts_client.env`;
 - устанавливает `qwen_tts_proxy_opus.sh` и `qwen_tts_runtime.py` в `~/.openclaw/bin`;
 - патчит `~/.openclaw/openclaw.json` на `tts-local-cli` без удаления остальных providers;
 - чистит legacy-ключи `audioAsVoice` / `textLimit`;

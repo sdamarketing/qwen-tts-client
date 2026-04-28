@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 OPENCLAW_HOME="${OPENCLAW_HOME:-$HOME/.openclaw}"
-CLIENT_ENV_PATH="${ROOT_DIR}/.env"
+CLIENT_ENV_PATH="${OPENCLAW_HOME}/qwen_tts_client.env"
 PROXY_SCRIPT_SOURCE="${ROOT_DIR}/scripts/qwen_tts_proxy_opus.sh"
 PROXY_SCRIPT_TARGET="${OPENCLAW_HOME}/bin/qwen_tts_proxy_opus.sh"
 RUNTIME_SCRIPT_SOURCE="${ROOT_DIR}/scripts/qwen_tts_runtime.py"
@@ -105,6 +105,7 @@ providers["tts-local-cli"] = {
     "timeoutMs": 120000,
     "env": {
         "QWEN_TTS_RUNTIME_SCRIPT": runtime_script,
+        "QWEN_TTS_CLIENT_ENV": str(openclaw_home / "qwen_tts_client.env"),
     },
 }
 
