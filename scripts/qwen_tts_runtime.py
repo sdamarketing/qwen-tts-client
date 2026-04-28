@@ -11,6 +11,10 @@ import uuid
 from pathlib import Path
 
 
+def _normalize_text(value: str) -> str:
+    return value.encode("utf-8", errors="replace").decode("utf-8", errors="replace")
+
+
 def _load_env_file(path: Path) -> dict[str, str]:
     data: dict[str, str] = {}
     if not path.exists():
@@ -26,12 +30,13 @@ def _load_env_file(path: Path) -> dict[str, str]:
         if not line or line.startswith("#") or "=" not in line:
             continue
         key, value = line.split("=", 1)
-        data[key.strip()] = value.strip().strip("'").strip('"')
+        cleaned = value.strip().strip("'").strip('"')
+        data[key.strip()] = _normalize_text(cleaned)
     return data
 
 
 def _env(name: str, default: str = "") -> str:
-    return os.environ.get(name, default).strip()
+    return _normalize_text(os.environ.get(name, default).strip())
 
 
 def _positive_int(value: str, default: int) -> int:
@@ -62,13 +67,13 @@ def _build_payload(text: str, request_id: str) -> dict[str, object]:
             parsed = json.loads(extra_hints)
             if isinstance(parsed, dict):
                 for key, value in parsed.items():
-                    session_hints[str(key)] = str(value)
+                    session_hints[_normalize_text(str(key))] = _normalize_text(str(value))
         except json.JSONDecodeError:
             pass
 
     payload: dict[str, object] = {
-        "text": text,
-        "requestId": request_id,
+        "text": _normalize_text(text),
+        "requestId": _normalize_text(request_id),
         "target": _env("CENTRAL_TTS_TARGET", "voice-note"),
         "sessionHints": session_hints,
     }
