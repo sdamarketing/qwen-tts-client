@@ -143,11 +143,11 @@ except Exception:
     raise SystemExit(0)
 
 tts = prefs.get("tts", {})
-provider_only = isinstance(tts, dict) and set(tts.keys()) <= {"provider"}
-if provider_only:
-    backup = prefs_path.with_name(f"tts.json.bak.provider-only.{int(time.time())}")
+partial_override = isinstance(tts, dict) and "providers" not in tts
+if partial_override:
+    backup = prefs_path.with_name(f"tts.json.bak.partial-override.{int(time.time())}")
     prefs_path.rename(backup)
-    print(f"moved provider-only prefs to {backup}")
+    print(f"moved partial tts override prefs to {backup}")
 else:
     print("local tts prefs left unchanged")
 PY
