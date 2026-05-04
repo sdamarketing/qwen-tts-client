@@ -53,6 +53,8 @@ OpenClaw для `outputFormat: opus` передаёт путь вида `…/spe
 
 Если `tts-local-cli` стабильно падает с `provider_error`, а с ноутбука `curl` до `/tts` работает: у процесса gateway часто заданы `HTTP_PROXY`/`HTTPS_PROXY`. Рантайм по умолчанию **не** использует системный прокси для `CENTRAL_TTS_BASE_URL` (Tailscale и приватные URL так не ломаются). Если TTS доступен **только** через прокси — выставь `CENTRAL_TTS_USE_SYSTEM_PROXY=1` в `qwen_tts_client.env`.
 
+Если в логах видно **`503` / `no tunnel here`** на URL вида `*.lhr.life` / `trycloudflare.com` — временный туннель к машине с TTS **умер**; подними туннель заново или переключи `CENTRAL_TTS_BASE_URL` на постоянный хост (например Tailscale `*.ts.net`), затем перезапусти gateway.
+
 ## Расширенный payload `/tts`
 
 `qwen_tts_runtime.py` отправляет backward-compatible тело:
