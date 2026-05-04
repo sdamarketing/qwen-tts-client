@@ -115,7 +115,12 @@ tts["provider"] = "tts-local-cli"
 tts.setdefault("auto", "off")
 tts.setdefault("persona", "")
 tts.setdefault("personas", {})
-tts["maxTextLength"] = 1500
+try:
+    _cur_max = int(tts.get("maxTextLength", 0))
+except (TypeError, ValueError):
+    _cur_max = 0
+# OpenClaw UI defaults to 1500; old installers left 600 and caused "max 600" with longer /tts text.
+tts["maxTextLength"] = max(_cur_max, 1500)
 tts.pop("audioAsVoice", None)
 tts.pop("textLimit", None)
 

@@ -36,6 +36,8 @@ chmod +x ./scripts/install_qwen_tts_client.sh
 
 Если после обновления OpenClaw видишь ошибку `Unrecognized keys: "audioAsVoice", "textLimit"`, значит остались старые ключи в `messages.tts`. Удалить их и оставить `maxTextLength`.
 
+Если `/tts status` показывает лимит 1500, а синтез падает с **`max 600`**, в `~/.openclaw/openclaw.json` в `messages.tts` всё ещё стоит `maxTextLength: 600`. Поставь **не меньше 1500** (или перезапусти актуальный `install_qwen_tts_client.sh` — он поднимет лимит минимум до 1500, не урезая более высокий, если ты его задавал).
+
 ## Ручной профиль (без установщика)
 
 Если нужно применить настройки вручную:
