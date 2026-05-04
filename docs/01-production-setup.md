@@ -47,6 +47,8 @@ chmod +x ./scripts/install_qwen_tts_client.sh
 
 `OpenClaw` -> `tts-local-cli` -> `qwen_tts_proxy_opus.sh` -> `qwen_tts_runtime.py` -> `https://<server>/tts` -> `OGG/Opus | WAV`
 
+OpenClaw для `outputFormat: opus` передаёт путь вида `…/speech.opus` и **считает формат по расширению**: если записать туда WAV, озвучка падает с `provider_error`. `qwen_tts_runtime.py` проверяет сигнатуру `OpusHead` в Ogg и при необходимости **транскодирует в Opus через `ffmpeg`**. На gateway/host должен быть доступен `ffmpeg`, если сервер отдаёт не Opus-in-Ogg.
+
 ## Расширенный payload `/tts`
 
 `qwen_tts_runtime.py` отправляет backward-compatible тело:

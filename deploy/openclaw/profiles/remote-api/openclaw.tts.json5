@@ -7,7 +7,7 @@
       auto: "off",
       persona: "",
       personas: {},
-      maxTextLength: 600,
+      maxTextLength: 1500,
       providers: {
         "tts-local-cli": {
           enabled: true,

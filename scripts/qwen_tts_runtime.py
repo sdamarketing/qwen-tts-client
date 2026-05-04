@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 import json
 import os
+import shutil
 import socket
+import subprocess
 import sys
 import tempfile
 import time
@@ -53,6 +55,124 @@ def _write_atomic(path: Path, payload: bytes) -> None:
         temp_file.write(payload)
         temp_name = temp_file.name
     os.replace(temp_name, str(path))
+
+
+def _content_type_base(headers) -> str:
+    raw = (headers.get("Content-Type") or "").strip()
+    return raw.split(";", 1)[0].strip().lower()
+
+
+def _is_opus_in_ogg(content: bytes) -> bool:
+    if len(content) < 4 or content[:4] != b"OggS":
+        return False
+    scan = min(len(content), 131072)
+    return b"OpusHead" in content[:scan]
+
+
+def _is_riff_wave(content: bytes) -> bool:
+    return len(content) >= 12 and content[:4] == b"RIFF" and content[8:12] == b"WAVE"
+
+
+def _looks_json_error(content: bytes) -> bool:
+    stripped = content.lstrip()
+    return bool(stripped) and stripped[:1] == b"{"
+
+
+def _http_audio_acceptable(content_type: str, content: bytes) -> bool:
+    if content_type.startswith("application/json") or content_type.startswith("text/html"):
+        return False
+    if content_type.startswith("audio/"):
+        return bool(content) and not _looks_json_error(content)
+    if content_type in ("application/ogg", "application/octet-stream", "binary/octet-stream", ""):
+        return bool(content) and not _looks_json_error(content)
+    return False
+
+
+def _ffmpeg_to_opus_file(payload: bytes, out_path: Path, timeout_sec: int) -> None:
+    ffmpeg = shutil.which("ffmpeg")
+    if not ffmpeg:
+        raise RuntimeError(
+            "TTS response is not Opus-in-Ogg; install `ffmpeg` to transcode (e.g. apt install ffmpeg)."
+        )
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = out_path.with_name(f".qwen-tts-ffmpeg-{uuid.uuid4().hex[:10]}.opus")
+    try:
+        proc = subprocess.run(
+            [
+                ffmpeg,
+                "-hide_banner",
+                "-loglevel",
+                "error",
+                "-y",
+                "-i",
+                "pipe:0",
+                "-c:a",
+                "libopus",
+                "-b:a",
+                "64k",
+                str(tmp),
+            ],
+            input=payload,
+            capture_output=True,
+            timeout=max(timeout_sec, 5),
+        )
+        if proc.returncode != 0:
+            err = (proc.stderr or b"").decode("utf-8", errors="replace").strip()
+            raise RuntimeError(f"ffmpeg transcode failed (exit {proc.returncode}): {err[:800]}")
+        if not tmp.exists() or tmp.stat().st_size == 0:
+            raise RuntimeError("ffmpeg produced empty output")
+        os.replace(str(tmp), str(out_path))
+    finally:
+        if tmp.exists():
+            try:
+                tmp.unlink()
+            except OSError:
+                pass
+
+
+def _ensure_output_audio(content: bytes, content_type: str, out_path: Path, transcode_timeout: int) -> None:
+    """
+    OpenClaw tts-local-cli picks format from the OUTPUT FILE EXTENSION only.
+    For voice-note it expects real Opus-in-Ogg at *.opus; writing WAV bytes there causes provider_error.
+    """
+    suffix = out_path.suffix.lower()
+    want_opus_file = suffix in (".opus", ".ogg")
+
+    if not want_opus_file:
+        _write_atomic(out_path, content)
+        return
+
+    if _is_opus_in_ogg(content):
+        _write_atomic(out_path, content)
+        return
+
+    if _looks_json_error(content) and not _is_riff_wave(content):
+        preview = content[:800].decode("utf-8", errors="replace")
+        raise RuntimeError(f"server returned JSON instead of audio: {preview}")
+
+    if _is_riff_wave(content) or content_type in ("audio/wav", "audio/x-wav", "audio/wave"):
+        _ffmpeg_to_opus_file(content, out_path, transcode_timeout)
+        return
+
+    if content_type in ("audio/mpeg", "audio/mp3") or (
+        len(content) >= 2 and content[0:1] == b"\xff" and (content[1] & 0xE0) == 0xE0
+    ):
+        _ffmpeg_to_opus_file(content, out_path, transcode_timeout)
+        return
+
+    if content[:4] == b"OggS":
+        _ffmpeg_to_opus_file(content, out_path, transcode_timeout)
+        return
+
+    if content_type.startswith("audio/") or content_type in (
+        "application/ogg",
+        "application/octet-stream",
+        "binary/octet-stream",
+    ):
+        _ffmpeg_to_opus_file(content, out_path, transcode_timeout)
+        return
+
+    raise RuntimeError(f"cannot map TTS payload to Opus file (content-type={content_type!r}, {len(content)} bytes)")
 
 
 def _build_payload(text: str, request_id: str) -> dict[str, object]:
@@ -128,16 +248,22 @@ def main() -> int:
         try:
             with urllib.request.urlopen(request, timeout=timeout_sec) as response:
                 content = response.read()
-                content_type = response.headers.get("Content-Type", "")
+                content_type = _content_type_base(response.headers)
                 if not content:
                     raise RuntimeError("server returned empty audio payload")
-                if not content_type.startswith("audio/"):
-                    raise RuntimeError(f"unexpected content-type: {content_type}")
-                _write_atomic(out_path, content)
+                if not _http_audio_acceptable(content_type, content):
+                    raise RuntimeError(f"unexpected content-type: {content_type or '(missing)'}")
+                transcode_timeout = max(
+                    _positive_int(_env("CENTRAL_TTS_FFMPEG_TIMEOUT_SEC", str(timeout_sec)), timeout_sec),
+                    5,
+                )
+                _ensure_output_audio(content, content_type, out_path, transcode_timeout)
                 elapsed_ms = (time.perf_counter() - started_at) * 1000
+                out_size = out_path.stat().st_size if out_path.exists() else 0
                 print(
                     f"[qwen-tts-runtime] request_id={request_id} attempt={attempt + 1} status=ok "
-                    f"latency_ms={elapsed_ms:.2f} bytes={len(content)} content_type={content_type}",
+                    f"latency_ms={elapsed_ms:.2f} bytes_in={len(content)} bytes_out={out_size} "
+                    f"content_type={content_type or '(missing)'}",
                     file=sys.stderr,
                 )
                 return 0
