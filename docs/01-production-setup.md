@@ -51,6 +51,8 @@ chmod +x ./scripts/install_qwen_tts_client.sh
 
 OpenClaw для `outputFormat: opus` передаёт путь вида `…/speech.opus` и **считает формат по расширению**: если записать туда WAV, озвучка падает с `provider_error`. `qwen_tts_runtime.py` проверяет сигнатуру `OpusHead` в Ogg и при необходимости **транскодирует в Opus через `ffmpeg`**. На gateway/host должен быть доступен `ffmpeg`, если сервер отдаёт не Opus-in-Ogg.
 
+Если `tts-local-cli` стабильно падает с `provider_error`, а с ноутбука `curl` до `/tts` работает: у процесса gateway часто заданы `HTTP_PROXY`/`HTTPS_PROXY`. Рантайм по умолчанию **не** использует системный прокси для `CENTRAL_TTS_BASE_URL` (Tailscale и приватные URL так не ломаются). Если TTS доступен **только** через прокси — выставь `CENTRAL_TTS_USE_SYSTEM_PROXY=1` в `qwen_tts_client.env`.
+
 ## Расширенный payload `/tts`
 
 `qwen_tts_runtime.py` отправляет backward-compatible тело:

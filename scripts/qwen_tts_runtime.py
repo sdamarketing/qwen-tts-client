@@ -49,6 +49,20 @@ def _positive_int(value: str, default: int) -> int:
         return default
 
 
+def _truthy_env(name: str) -> bool:
+    return _env(name, "").lower() in ("1", "true", "yes", "on")
+
+
+def _build_url_opener() -> urllib.request.OpenerDirector:
+    """
+    Gateway processes often inherit HTTP_PROXY/HTTPS_PROXY. urllib honors them by default,
+    which breaks private / Tailscale TTS URLs. Disable system proxies unless explicitly opted in.
+    """
+    if _truthy_env("CENTRAL_TTS_USE_SYSTEM_PROXY"):
+        return urllib.request.build_opener()
+    return urllib.request.build_opener(urllib.request.ProxyHandler({}))
+
+
 def _write_atomic(path: Path, payload: bytes) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.NamedTemporaryFile(dir=str(path.parent), prefix=".qwen-tts-", delete=False) as temp_file:
@@ -231,6 +245,7 @@ def main() -> int:
     payload = _build_payload(text=text, request_id=request_id)
     request_url = f"{base_url.rstrip('/')}/tts"
     body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+    url_opener = _build_url_opener()
 
     last_error = "unknown error"
     for attempt in range(0, max_retries + 1):
@@ -246,7 +261,7 @@ def main() -> int:
             data=body,
         )
         try:
-            with urllib.request.urlopen(request, timeout=timeout_sec) as response:
+            with url_opener.open(request, timeout=timeout_sec) as response:
                 content = response.read()
                 content_type = _content_type_base(response.headers)
                 if not content:
@@ -282,7 +297,12 @@ def main() -> int:
         if attempt < max_retries:
             time.sleep((retry_backoff_ms / 1000.0) * (attempt + 1))
 
-    print(f"[qwen-tts-runtime] request_id={request_id} status=failed error={last_error}", file=sys.stderr)
+    hint = ""
+    if not _truthy_env("CENTRAL_TTS_USE_SYSTEM_PROXY"):
+        le = last_error.lower()
+        if any(s in le for s in ("timed out", "connection refused", "unreachable", "name or service not known", "nodename", "tunnel", "proxy")):
+            hint = " | hint: TTS uses direct TCP (no HTTP_PROXY); set CENTRAL_TTS_USE_SYSTEM_PROXY=1 if you need a proxy."
+    print(f"[qwen-tts-runtime] request_id={request_id} status=failed error={last_error}{hint}", file=sys.stderr)
     return 1
 
 
