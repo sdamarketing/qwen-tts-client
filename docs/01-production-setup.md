@@ -36,6 +36,8 @@ chmod +x ./scripts/install_qwen_tts_client.sh
 
 Если после обновления OpenClaw видишь ошибку `Unrecognized keys: "audioAsVoice", "textLimit"`, значит остались старые ключи в `messages.tts`. Удалить их и оставить `maxTextLength`.
 
+Если `/tts status` показывает лимит 1500, а синтез падает с **`max 600`**, в `~/.openclaw/openclaw.json` в `messages.tts` всё ещё стоит `maxTextLength: 600`. Поставь **не меньше 1500** (или перезапусти актуальный `install_qwen_tts_client.sh` — он поднимет лимит минимум до 1500, не урезая более высокий, если ты его задавал).
+
 ## Ручной профиль (без установщика)
 
 Если нужно применить настройки вручную:
@@ -46,6 +48,10 @@ chmod +x ./scripts/install_qwen_tts_client.sh
 ## Архитектура
 
 `OpenClaw` -> `tts-local-cli` -> `qwen_tts_proxy_opus.sh` -> `qwen_tts_runtime.py` -> `https://<server>/tts` -> `OGG/Opus | WAV`
+
+OpenClaw для `outputFormat: opus` передаёт путь вида `…/speech.opus` и **считает формат по расширению**: если записать туда WAV, озвучка падает с `provider_error`. `qwen_tts_runtime.py` проверяет сигнатуру `OpusHead` в Ogg и при необходимости **транскодирует в Opus через `ffmpeg`**. На gateway/host должен быть доступен `ffmpeg`, если сервер отдаёт не Opus-in-Ogg.
+
+Если `tts-local-cli` стабильно падает с `provider_error`, а с ноутбука `curl` до `/tts` работает: у процесса gateway часто заданы `HTTP_PROXY`/`HTTPS_PROXY`. Рантайм по умолчанию **не** использует системный прокси для `CENTRAL_TTS_BASE_URL` (Tailscale и приватные URL так не ломаются). Если TTS доступен **только** через прокси — выставь `CENTRAL_TTS_USE_SYSTEM_PROXY=1` в `qwen_tts_client.env`.
 
 ## Расширенный payload `/tts`
 

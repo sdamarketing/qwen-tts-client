@@ -62,6 +62,8 @@ CENTRAL_TTS_TARGET=$(env_quote "${DEFAULT_TARGET}")
 CENTRAL_TTS_TIMEOUT_SEC=$(env_quote "${DEFAULT_TIMEOUT_SEC}")
 CENTRAL_TTS_RETRIES=$(env_quote "${DEFAULT_RETRIES}")
 CENTRAL_TTS_RETRY_BACKOFF_MS=$(env_quote "${DEFAULT_BACKOFF_MS}")
+CENTRAL_TTS_FFMPEG_TIMEOUT_SEC=$(env_quote "${DEFAULT_TIMEOUT_SEC}")
+CENTRAL_TTS_USE_SYSTEM_PROXY=
 # Optional hints for OpenClaw 2026.4.25+ flow
 CENTRAL_TTS_VOICE=
 CENTRAL_TTS_MODEL=
@@ -114,7 +116,12 @@ tts["provider"] = "tts-local-cli"
 tts.setdefault("auto", "off")
 tts.setdefault("persona", "")
 tts.setdefault("personas", {})
-tts["maxTextLength"] = 600
+try:
+    _cur_max = int(tts.get("maxTextLength", 0))
+except (TypeError, ValueError):
+    _cur_max = 0
+# OpenClaw UI defaults to 1500; old installers left 600 and caused "max 600" with longer /tts text.
+tts["maxTextLength"] = max(_cur_max, 1500)
 tts.pop("audioAsVoice", None)
 tts.pop("textLimit", None)
 
@@ -158,6 +165,10 @@ if command -v systemctl >/dev/null 2>&1 && systemctl --user list-unit-files | aw
   systemctl --user is-active openclaw-gateway.service || true
 elif command -v launchctl >/dev/null 2>&1; then
   launchctl kickstart -k "gui/$(id -u)/ai.openclaw.gateway" || true
+fi
+
+if ! command -v ffmpeg >/dev/null 2>&1; then
+  echo "WARN: ffmpeg not in PATH. If the TTS server returns WAV/MP3 instead of Opus-in-Ogg, install ffmpeg (e.g. apt install ffmpeg)." >&2
 fi
 
 print_step "Running smoke test"
