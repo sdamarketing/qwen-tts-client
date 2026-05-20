@@ -1,0 +1,4 @@
+# Публичный npm (по умолчанию для scope @sdamarketing после publish на npmjs.com):
+# npm install -g @sdamarketing/qwen-tts-client
+
+# GitHub Packages — см. .npmrc.github.example

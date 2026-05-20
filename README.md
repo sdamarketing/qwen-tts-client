@@ -20,8 +20,54 @@ Production-клиент для OpenClaw `tts-local-cli`, который прок
 
 ## Быстрый запуск
 
+### Установка из npm (npmjs.com)
+
+После `npm run publish:all` пакет доступен на обоих реестрах. С npmjs.com ставится **без** `.npmrc`:
+
 ```bash
-cd products/qwen-tts-client
+npm install -g @sdamarketing/qwen-tts-client
+qwen-tts-install
+```
+
+### Установка из GitHub Packages
+
+Скопируй `.npmrc.github.example` в `~/.npmrc` и задай `GITHUB_TOKEN` (`read:packages`), либо:
+
+```bash
+npm install -g @sdamarketing/qwen-tts-client --registry=https://npm.pkg.github.com
+```
+
+### Публикация в оба реестра (maintainers)
+
+Один tarball, два реестра (имя и версия совпадают):
+
+```bash
+# npmjs.com — нужен OTP или NPM_TOKEN с publish
+npm run publish:npm
+
+# GitHub Packages — GITHUB_TOKEN с write:packages
+export NODE_AUTH_TOKEN="$GITHUB_TOKEN"
+npm run publish:github
+
+# или оба подряд
+npm run publish:all
+```
+
+На npmjs.com для scoped-пакета обязателен `--access public` (уже в скрипте `publish:npm`).
+
+CI: при создании GitHub Release workflow `.github/workflows/publish.yml` публикует в npmjs (`NPM_TOKEN`) и GitHub Packages (`GITHUB_TOKEN`).
+
+Прокси для ручного smoke-test:
+
+```bash
+qwen-tts-proxy "Проверка TTS" /tmp/qwen-tts-smoke.ogg
+```
+
+### Установка из git
+
+```bash
+git clone https://github.com/sdamarketing/qwen-tts-client.git
+cd qwen-tts-client
 chmod +x ./scripts/install_qwen_tts_client.sh
 ./scripts/install_qwen_tts_client.sh
 ```

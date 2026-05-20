@@ -1,0 +1,48 @@
+{
+  "name": "@sdamarketing/qwen-tts-client",
+  "version": "1.0.0",
+  "description": "OpenClaw tts-local-cli client for remote Qwen TTS Server (OGG/Opus proxy)",
+  "keywords": [
+    "openclaw",
+    "tts",
+    "qwen",
+    "opus",
+    "voice"
+  ],
+  "homepage": "https://github.com/sdamarketing/qwen-tts-client#readme",
+  "bugs": {
+    "url": "https://github.com/sdamarketing/qwen-tts-client/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sdamarketing/qwen-tts-client.git"
+  },
+  "license": "MIT",
+  "author": "sdamarketing",
+  "type": "commonjs",
+  "files": [
+    "scripts/",
+    "deploy/",
+    "docs/",
+    ".env.example",
+    "README.md"
+  ],
+  "bin": {
+    "qwen-tts-proxy": "scripts/qwen_tts_proxy_opus.sh",
+    "qwen-tts-install": "scripts/install_qwen_tts_client.sh"
+  },
+  "scripts": {
+    "prepack": "chmod +x scripts/qwen_tts_proxy_opus.sh scripts/install_qwen_tts_client.sh",
+    "prepublishOnly": "npm run pack:check",
+    "pack:check": "npm pack --dry-run",
+    "publish:npm": "npm publish --access public --registry https://registry.npmjs.org",
+    "publish:github": "npm publish --registry https://npm.pkg.github.com",
+    "publish:all": "npm run publish:npm && npm run publish:github"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

@@ -1,5 +1,5 @@
 .env
-*.tgz
 outputs/
 __pycache__/
 *.py[cod]
+.git/
