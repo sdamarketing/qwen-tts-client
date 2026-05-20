@@ -61,9 +61,13 @@ env:
 
 Не смешивайте Trusted Publisher и Publish-токен в одном job — будет `EOTP` или `403`.
 
-## После смены версии
+## Повторная публикация той же версии
 
-Если версия уже на registry — подними `version` в `package.json` перед повторным publish.
+```text
+403 You cannot publish over the previously published versions: 1.0.0
+```
+
+Версии на npm **неизменяемы**. Подними patch в `package.json` (`npm version patch`) и снова `npm run publish:all`.
 
 ## Локально с 2FA
 

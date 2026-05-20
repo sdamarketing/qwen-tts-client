@@ -1,6 +1,6 @@
 {
   "name": "@sdamarketing/qwen-tts-client",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "OpenClaw tts-local-cli client for remote Qwen TTS Server (OGG/Opus proxy)",
   "keywords": [
     "openclaw",
