@@ -81,4 +81,4 @@ npm run publish:github   # NODE_AUTH_TOKEN=GITHUB_TOKEN, write:packages
 npm run publish:all
 ```
 
-CI: `.github/workflows/publish.yml` on Release. Details: [docs/02-npm-publish.md](docs/02-npm-publish.md).
+CI: `.github/workflows/publish.yml` on Release (npmjs OIDC + GitHub Packages).
