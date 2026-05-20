@@ -71,14 +71,4 @@ File: `~/.openclaw/qwen_tts_client.env` (template: `.env.example`). Loaded via `
 | `scripts/qwen_tts_proxy_opus.sh` | OpenClaw entrypoint |
 | `scripts/qwen_tts_runtime.py` | HTTP client, retry, Opus check, ffmpeg |
 | `deploy/openclaw/profiles/remote-api/` | Manual `openclaw.json` + env samples |
-| `docs/` | Setup and publish notes |
-
-## Maintainers / Публикация
-
-```bash
-npm run publish:npm      # registry.npmjs.org (--otp if 2FA)
-npm run publish:github   # NODE_AUTH_TOKEN=GITHUB_TOKEN, write:packages
-npm run publish:all
-```
-
-CI: `.github/workflows/publish.yml` on Release (npmjs OIDC + GitHub Packages).
+| `docs/` | Setup notes |
