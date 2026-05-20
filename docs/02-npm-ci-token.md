@@ -6,6 +6,7 @@
 |-----|---------|
 | `403` + bypass 2fa | `NPM_TOKEN` — не Automation / без bypass 2FA |
 | `EOTP` | В workflow передан `NPM_TOKEN` типа **Publish** — npm требует OTP, в CI его нет |
+| `404` Not Found | Пакет/scope ещё **не существует** на npmjs, или Trusted Publisher привязан **не к тому** npm-аккаунту, который владеет `@sdamarketing` |
 
 **Рекомендуемый способ:** [npm Trusted Publishers](https://docs.npmjs.com/trusted-publishers) (OIDC). Секрет `NPM_TOKEN` для publish **не нужен**.
 
@@ -24,13 +25,25 @@
 
 Workflow уже настроен: `id-token: write`, `npm publish --provenance`, **без** `NODE_AUTH_TOKEN`.
 
-Первый publish scoped-пакета иногда делают локально один раз:
+### Первый publish (если CI даёт `404`)
+
+Scoped-пакет `@sdamarketing/qwen-tts-client` должен появиться на npmjs **один раз** под аккаунтом, который владеет scope (сейчас maintainer: **alekhm**).
+
+1. Локально (логин `npm whoami` = этот аккаунт):
 
 ```bash
 npm run publish:npm -- --otp=123456
 ```
 
-После появления пакета на npmjs — дальнейшие версии через CI + Trusted Publisher.
+2. На npmjs: **Package settings → Trusted publishing** — тот же аккаунт, repo `sdamarketing/qwen-tts-client`, workflow `publish.yml`.
+
+3. Следующие версии — только CI; **подними `version`** в `package.json` (повтор `1.0.0` даст conflict, не 404).
+
+Проверка:
+
+```bash
+npm view @sdamarketing/qwen-tts-client version
+```
 
 ## Запасной вариант: NPM_TOKEN
 

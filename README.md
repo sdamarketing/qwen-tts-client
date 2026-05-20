@@ -29,6 +29,8 @@ npm install -g @sdamarketing/qwen-tts-client
 qwen-tts-install
 ```
 
+Пакет на npmjs: https://www.npmjs.com/package/@sdamarketing/qwen-tts-client
+
 ### Установка из GitHub Packages
 
 Скопируй `.npmrc.github.example` в `~/.npmrc` и задай `GITHUB_TOKEN` (`read:packages`), либо:
