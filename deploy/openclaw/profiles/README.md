@@ -1,17 +1,14 @@
-# OpenClaw Profile (Remote API)
+# OpenClaw profiles
 
-Этот проект использует один production-профиль клиента:
+**EN:** Static config samples for manual setup (installer patches `openclaw.json` automatically).
 
-- `remote-api` — OpenClaw не запускает локальный TTS и получает финальный `OGG/Opus` от удаленного сервера.
+**RU:** Примеры конфигурации для ручной настройки (установщик правит `openclaw.json` сам).
 
-## Файлы
+## `remote-api/`
 
-- `remote-api/openclaw.tts.json5` — фрагмент для `messages.tts`;
-- `remote-api/openclaw-node.env.example` — пример переменных окружения gateway.
+| File | Content |
+|------|---------|
+| `openclaw.tts.json5` | `messages.tts` fragment: `tts-local-cli`, `outputFormat: opus` |
+| `openclaw-node.env.example` | Gateway + `CENTRAL_TTS_*` env template |
 
-## Принцип
-
-- `tts-local-cli` активируется как primary provider;
-- `qwen_tts_proxy_opus.sh` запускает `qwen_tts_runtime.py`;
-- runtime делает HTTPS вызов в удаленный `/tts` и поддерживает retry/timeout/diagnostics;
-- локальная генерация отсутствует, локальная конверсия не выполняется.
+Paths in json5: replace `~/.openclaw/bin/...` with your `OPENCLAW_HOME` if not default.

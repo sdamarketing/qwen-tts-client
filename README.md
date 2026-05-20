@@ -1,102 +1,84 @@
 # Qwen TTS Client
 
-Production-клиент для OpenClaw `tts-local-cli`, который проксирует синтез на удаленный `Qwen TTS Server`.
+**EN:** OpenClaw `tts-local-cli` provider — HTTP proxy to a remote Qwen TTS Server (`/tts`), output OGG/Opus (ffmpeg transcode if needed).
 
-Базовый путь:
+**RU:** Провайдер OpenClaw `tts-local-cli` — HTTP-прокси на удалённый Qwen TTS Server (`/tts`), на выходе OGG/Opus (при необходимости — ffmpeg).
 
-- `OpenClaw (tts-local-cli)`
-- `qwen_tts_proxy_opus.sh` (тонкий launcher)
-- `qwen_tts_runtime.py` (валидация/retry/diagnostics)
-- `Qwen TTS Server /tts`
-- возврат `OGG/Opus` или `WAV` (по настройке сервера)
+## Flow / Цепочка
 
-## Что делает проект
+```text
+OpenClaw → tts-local-cli → qwen_tts_proxy_opus.sh → qwen_tts_runtime.py → POST /tts → *.opus
+```
 
-- интерактивно запрашивает endpoint и API key удаленного TTS;
-- генерирует `~/.openclaw/qwen_tts_client.env` с retry/timeout/hints настройками;
-- настраивает `~/.openclaw/openclaw.json` под `tts-local-cli` без удаления других providers;
-- мигрирует legacy-ключи (`audioAsVoice`, `textLimit`) в `maxTextLength`;
-- выполняет smoke-test и проверяет выходной аудиофайл.
+## Install / Установка
 
-## Быстрый запуск
-
-### Установка из npm (npmjs.com)
-
-После `npm run publish:all` пакет доступен на обоих реестрах. С npmjs.com ставится **без** `.npmrc`:
+**npm (npmjs.com):**
 
 ```bash
 npm install -g @sdamarketing/qwen-tts-client
 qwen-tts-install
 ```
 
-Пакет на npmjs: https://www.npmjs.com/package/@sdamarketing/qwen-tts-client
+**npm (GitHub Packages):** see `.npmrc.github.example`, then the same commands with `--registry=https://npm.pkg.github.com`.
 
-### Установка из GitHub Packages
-
-Скопируй `.npmrc.github.example` в `~/.npmrc` и задай `GITHUB_TOKEN` (`read:packages`), либо:
-
-```bash
-npm install -g @sdamarketing/qwen-tts-client --registry=https://npm.pkg.github.com
-```
-
-### Публикация в оба реестра (maintainers)
-
-Один tarball, два реестра (имя и версия совпадают):
-
-```bash
-# npmjs.com — нужен OTP или NPM_TOKEN с publish
-npm run publish:npm
-
-# GitHub Packages — GITHUB_TOKEN с write:packages
-export NODE_AUTH_TOKEN="$GITHUB_TOKEN"
-npm run publish:github
-
-# или оба подряд
-npm run publish:all
-```
-
-На npmjs.com для scoped-пакета обязателен `--access public` (уже в скрипте `publish:npm`).
-
-CI: при Release workflow `.github/workflows/publish.yml` публикует в npmjs и GitHub Packages **параллельно**.
-
-**npmjs.com:** Trusted Publisher на пакете (workflow `publish.yml`, OIDC) — секрет `NPM_TOKEN` не нужен. Ошибки `403`/`EOTP` — см. [docs/02-npm-ci-token.md](docs/02-npm-ci-token.md).
-
-Прокси для ручного smoke-test:
-
-```bash
-qwen-tts-proxy "Проверка TTS" /tmp/qwen-tts-smoke.ogg
-```
-
-### Установка из git
+**git:**
 
 ```bash
 git clone https://github.com/sdamarketing/qwen-tts-client.git
 cd qwen-tts-client
-chmod +x ./scripts/install_qwen_tts_client.sh
 ./scripts/install_qwen_tts_client.sh
 ```
 
-После установки проверь в чате OpenClaw:
+**EN:** `qwen-tts-install` writes `~/.openclaw/qwen_tts_client.env`, copies scripts to `~/.openclaw/bin/`, patches `~/.openclaw/openclaw.json` (`tts-local-cli`), runs a smoke test.
 
-- `/tts status`
-- `/tts latest`
-- `/tts chat on`
-- `/tts persona off`
+**RU:** `qwen-tts-install` создаёт env, копирует скрипты в `~/.openclaw/bin/`, правит `openclaw.json`, делает smoke-test.
 
-## Новые возможности OpenClaw 2026.4.25+
+## CLI (npm bin)
 
-Клиент совместим с расширенным TTS workflow:
+| Command | Role |
+|---------|------|
+| `qwen-tts-install` | `scripts/install_qwen_tts_client.sh` |
+| `qwen-tts-proxy` | `scripts/qwen_tts_proxy_opus.sh` → `qwen_tts_runtime.py` |
 
-- chat-level override: `/tts chat on|off|default`;
-- ручная озвучка последнего ответа: `/tts latest`;
-- persona override: `/tts persona <id>|off`;
-- per-agent/per-channel overlays через OpenClaw-конфиг (`agents.list[].tts`, `channels.<channel>.accounts.<id>.tts`).
+```bash
+qwen-tts-proxy "text" /tmp/out.opus
+```
 
-## Структура
+## Env / Переменные
 
-- `scripts/install_qwen_tts_client.sh` — интерактивный установщик;
-- `scripts/qwen_tts_proxy_opus.sh` — shell launcher для Local CLI;
-- `scripts/qwen_tts_runtime.py` — runtime транспорт в удаленный `/tts`;
-- `deploy/openclaw/profiles/remote-api` — готовый профиль OpenClaw для remote TTS;
-- `.env.example` — шаблон клиентских переменных;
-- `docs/` — production runbook клиента.
+File: `~/.openclaw/qwen_tts_client.env` (template: `.env.example`). Loaded via `QWEN_TTS_CLIENT_ENV`.
+
+| Variable | Required | Default (in code) |
+|----------|----------|-------------------|
+| `CENTRAL_TTS_BASE_URL` | yes | — |
+| `CENTRAL_TTS_API_KEY` | yes | — |
+| `CENTRAL_TTS_TARGET` | no | `voice-note` |
+| `CENTRAL_TTS_TIMEOUT_SEC` | no | `120` |
+| `CENTRAL_TTS_RETRIES` | no | `2` |
+| `CENTRAL_TTS_RETRY_BACKOFF_MS` | no | `350` |
+| `CENTRAL_TTS_FFMPEG_TIMEOUT_SEC` | no | same as timeout |
+| `CENTRAL_TTS_USE_SYSTEM_PROXY` | no | off (`1` = use `HTTP_PROXY`) |
+| `CENTRAL_TTS_VOICE`, `MODEL`, `PERSONA` | no | — |
+| `CENTRAL_TTS_SESSION_HINTS_JSON` | no | — |
+
+**POST body:** `text` + optional `voice`, `model`, `persona`, `target`, `requestId`, `sessionHints`.
+
+## Repo layout / Структура
+
+| Path | Purpose |
+|------|---------|
+| `scripts/install_qwen_tts_client.sh` | Interactive installer |
+| `scripts/qwen_tts_proxy_opus.sh` | OpenClaw entrypoint |
+| `scripts/qwen_tts_runtime.py` | HTTP client, retry, Opus check, ffmpeg |
+| `deploy/openclaw/profiles/remote-api/` | Manual `openclaw.json` + env samples |
+| `docs/` | Setup and publish notes |
+
+## Maintainers / Публикация
+
+```bash
+npm run publish:npm      # registry.npmjs.org (--otp if 2FA)
+npm run publish:github   # NODE_AUTH_TOKEN=GITHUB_TOKEN, write:packages
+npm run publish:all
+```
+
+CI: `.github/workflows/publish.yml` on Release. Details: [docs/02-npm-publish.md](docs/02-npm-publish.md).

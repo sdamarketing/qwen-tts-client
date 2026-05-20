@@ -11,12 +11,13 @@
       providers: {
         "tts-local-cli": {
           enabled: true,
-          command: "/home/alekhm/.openclaw/bin/qwen_tts_proxy_opus.sh",
+          command: "~/.openclaw/bin/qwen_tts_proxy_opus.sh",
           args: ["{{Text}}", "{{OutputPath}}"],
           outputFormat: "opus",
           timeoutMs: 120000,
           env: {
-            QWEN_TTS_RUNTIME_SCRIPT: "/home/alekhm/.openclaw/bin/qwen_tts_runtime.py"
+            QWEN_TTS_RUNTIME_SCRIPT: "~/.openclaw/bin/qwen_tts_runtime.py",
+            QWEN_TTS_CLIENT_ENV: "~/.openclaw/qwen_tts_client.env"
           }
         }
       }

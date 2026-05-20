@@ -1,3 +1,2 @@
-# Только для установки/публикации через GitHub Packages (не нужно, если ставите с npmjs.com).
 @sdamarketing:registry=https://npm.pkg.github.com
 //npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
