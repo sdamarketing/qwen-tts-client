@@ -1,46 +1,58 @@
-# NPM_TOKEN для GitHub Actions
+# Публикация на npmjs.com из GitHub Actions
 
-Ошибка в CI:
+## Ошибки в CI
 
-```text
-403 Forbidden - Two-factor authentication or granular access token with bypass 2fa enabled is required
+| Код | Причина |
+|-----|---------|
+| `403` + bypass 2fa | `NPM_TOKEN` — не Automation / без bypass 2FA |
+| `EOTP` | В workflow передан `NPM_TOKEN` типа **Publish** — npm требует OTP, в CI его нет |
+
+**Рекомендуемый способ:** [npm Trusted Publishers](https://docs.npmjs.com/trusted-publishers) (OIDC). Секрет `NPM_TOKEN` для publish **не нужен**.
+
+## Trusted Publisher (рекомендуется)
+
+Один раз на npmjs.com (под аккаунтом с правом publish `@sdamarketing/*`):
+
+1. Открой настройки пакета `@sdamarketing/qwen-tts-client` → **Publishing access** → **Trusted publishing**  
+   (или org: https://www.npmjs.com/settings/sdamarketing/packages)
+2. **Add GitHub Actions trusted publisher**
+   - Repository: `sdamarketing/qwen-tts-client`
+   - Workflow filename: `publish.yml`
+   - Environment: пусто (если не используете GitHub Environment)
+3. В GitHub **удали секрет `NPM_TOKEN`** (если есть) — иначе старый токен может мешать.
+4. Re-run workflow **Publish package**.
+
+Workflow уже настроен: `id-token: write`, `npm publish --provenance`, **без** `NODE_AUTH_TOKEN`.
+
+Первый publish scoped-пакета иногда делают локально один раз:
+
+```bash
+npm run publish:npm -- --otp=123456
 ```
 
-Значит секрет `NPM_TOKEN` в репозитории **не подходит** для публикации без OTP (типично: Classic **Publish** token или granular token **без** bypass 2FA).
+После появления пакета на npmjs — дальнейшие версии через CI + Trusted Publisher.
 
-## Что сделать на npmjs.com
+## Запасной вариант: NPM_TOKEN
 
-1. Войти под аккаунтом, у которого есть право публиковать `@sdamarketing/*` (владелец org **sdamarketing** на npm или привязанный пользователь).
-2. Открыть [Access Tokens](https://www.npmjs.com/settings/~/tokens).
+Если Trusted Publisher не используете:
 
-### Вариант A — Classic Automation (проще)
+1. [Access Tokens](https://www.npmjs.com/settings/~/tokens) → Classic **Automation** (не Publish)  
+   или Granular с **Bypass two-factor authentication for automation**
+2. Секрет `NPM_TOKEN` в GitHub Actions
+3. В workflow **временно** вернуть:
 
-- **Generate New Token → Classic Token**
-- Type: **Automation** (не Publish, не Read-only)
-- Скопировать токен один раз → в GitHub: **Settings → Secrets → Actions → `NPM_TOKEN`**
+```yaml
+env:
+  NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+```
 
-Automation-токены предназначены для CI и не требуют `--otp` при publish, если на аккаунте включена 2FA.
+Не смешивайте Trusted Publisher и Publish-токен в одном job — будет `EOTP` или `403`.
 
-### Вариант B — Granular Access Token
+## После смены версии
 
-- **Generate New Token → Granular Access Token**
-- Permissions: **Read and write** для нужных packages / org `sdamarketing`
-- Обязательно включить: **Bypass two-factor authentication for automation**
-- Сохранить как `NPM_TOKEN` в GitHub Secrets
+Если версия уже на registry — подними `version` в `package.json` перед повторным publish.
 
-## Проверка org scope
-
-Пакет называется `@sdamarketing/qwen-tts-client`. На npm должна существовать org (или scope) **sdamarketing**, и токен должен быть создан пользователем с правом publish в этот scope.
-
-Связка GitHub org ↔ npm: [npm organization settings](https://www.npmjs.com/settings/sdamarketing/packages) (если используете npm Teams).
-
-## После обновления секрета
-
-1. Обновить `NPM_TOKEN` в `https://github.com/sdamarketing/qwen-tts-client/settings/secrets/actions`
-2. Re-run workflow **Publish package**
-3. Если версия `1.0.0` уже опубликована — поднять `version` в `package.json` перед повтором
-
-## Локальная публикация с 2FA
+## Локально с 2FA
 
 ```bash
 npm run publish:npm -- --otp=123456

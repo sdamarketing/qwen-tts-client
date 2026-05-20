@@ -19,10 +19,10 @@ jobs:
           node-version: "20"
           registry-url: https://registry.npmjs.org
 
+      # Auth via npm Trusted Publisher (OIDC). Do NOT set NODE_AUTH_TOKEN / NPM_TOKEN here —
+      # a Publish token in secrets causes EOTP (OTP required).
       - name: Publish to npmjs.com
         run: npm publish --access public --provenance --registry https://registry.npmjs.org
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   publish-github:
     runs-on: ubuntu-latest
