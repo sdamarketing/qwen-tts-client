@@ -55,7 +55,9 @@ npm run publish:all
 
 На npmjs.com для scoped-пакета обязателен `--access public` (уже в скрипте `publish:npm`).
 
-CI: при создании GitHub Release workflow `.github/workflows/publish.yml` публикует в npmjs (`NPM_TOKEN`) и GitHub Packages (`GITHUB_TOKEN`).
+CI: при Release workflow `.github/workflows/publish.yml` публикует в npmjs и GitHub Packages **параллельно**.
+
+Секрет **`NPM_TOKEN`**: Classic token типа **Automation** (или granular с **Bypass 2FA for automation**). Иначе CI получит `403` — см. [docs/02-npm-ci-token.md](docs/02-npm-ci-token.md).
 
 Прокси для ручного smoke-test:
 
