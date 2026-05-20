@@ -11,6 +11,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+      id-token: write
     steps:
       - uses: actions/checkout@v4
 
@@ -28,8 +29,9 @@ jobs:
         with:
           node-version: "20"
           registry-url: https://npm.pkg.github.com
+          scope: "@sdamarketing"
 
       - name: Publish to GitHub Packages
-        run: npm publish --registry https://npm.pkg.github.com
+        run: npm publish --access public --registry https://npm.pkg.github.com
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
